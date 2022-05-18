@@ -50,11 +50,15 @@ from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
 state = 1
 
 # this method is called everytime something is published on the topic '/decision'
-def callback(data):
+def callback_decision(data):
 
     global state
     # we change the value by the new value
     state = int(data.data)
+
+# this function is called everytime something is published on the topic '/wheel_informations'
+def callback_info(data):
+    print("something was heard")
 
 def wheel_encoders():
 
@@ -83,8 +87,11 @@ def wheel_encoders():
     current_time = rospy.Time.now()
     last_time = rospy.Time.now()
 
-    # subscribe to the topic '/decision' and execute callback function everytime he receive an information
-    rospy.Subscriber('decision', String, callback)
+    # subscribe to the topic '/decision' 
+    rospy.Subscriber('decision', String, callback_decision)
+
+    # subscribe to the topic 'wheel_informations
+    rospy.Subscriber('wheel_informations', String, callback_info)
     
     # publish the odometry information
     odom_pub = rospy.Publisher("odom_publisher", Odometry, queue_size=50)
