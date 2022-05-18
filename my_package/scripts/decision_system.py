@@ -46,41 +46,40 @@ def decision_system():
     # Initialize the publisher
     pub = rospy.Publisher('decision', String, queue_size=10)
 
-    # The value is publish every 1 second
-    rate = rospy.Rate(1) 
+    # The value is publish every 1/0,2 = 5 second
+    rate = rospy.Rate(0.2) 
 
     # Initialization of the value
     value = 0
     
     while not rospy.is_shutdown():
+
         # Get the decision
         decision = getDecision(value)
+        print(decision)
 
         # Write the decision in the log
         rospy.loginfo(decision)
 
         # Publish on the topic '/decision'
-        pub.publish(decision)
+        pub.publish(str(decision))
 
-	# Wait 1 second
+	# Wait 5 second
         rate.sleep()
 
         # Update the value
         value = updateValue(value)
 
-        updateValue(value);
-
-# Update the value
-# It's basically on algorithm that count from 0 to 9
+# change the value
 def updateValue(value):
 
-    return (value + 1)%10
+    return (value + 1)%2
 
 # Determine decision depending on the value
 def getDecision(value):
 
     # We use the first algorithm (wheel encoders)
-    if value <= 4:
+    if value == 0:
 
 	return 1
 
