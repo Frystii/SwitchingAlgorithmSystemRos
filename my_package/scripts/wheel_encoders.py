@@ -49,16 +49,24 @@ from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
 # value that we'll get from the topic '/decision' and that will be use to see if we need to use this algorithm
 state = 1
 
-# this method is called everytime something is published on the topic '/decision'
+pose = Pose(Point(), Quaternion())
+twist = Twist(Vector3(), Vector3())
+
+# this function is called everytime something is published on the topic '/decision'
 def callback_decision(data):
 
-    global state
     # we change the value by the new value
     state = int(data.data)
 
 # this function is called everytime something is published on the topic '/wheel_informations'
 def callback_info(data):
-    print("something was heard")
+    print("info")
+
+# this function is called everytime something is published on the topic '/odom_publisher'
+def callback_odom(data):
+
+    pose = data.pose
+    twist = data.pose
 
 def wheel_encoders():
 
@@ -87,11 +95,14 @@ def wheel_encoders():
     current_time = rospy.Time.now()
     last_time = rospy.Time.now()
 
-    # subscribe to the topic '/decision' 
+    # subscribe to the topic 'decision' 
     rospy.Subscriber('decision', String, callback_decision)
 
-    # subscribe to the topic 'wheel_informations
+    # subscribe to the topic 'wheel_informations'
     rospy.Subscriber('wheel_informations', String, callback_info)
+
+    # subscribe to the topic 'odom_publisher'
+    rospy.Subscriber('odom_publisher', Odometry, callback_odom)
     
     # publish the odometry information
     odom_pub = rospy.Publisher("odom_publisher", Odometry, queue_size=50)
@@ -100,8 +111,6 @@ def wheel_encoders():
     odom_broadcaster = tf.TransformBroadcaster()
 
     while not rospy.is_shutdown():
-
-        global state
 
 	if state == 1:	
 
@@ -113,9 +122,9 @@ def wheel_encoders():
 	    delta_y = (vx * sin(th) + vy * cos(th)) * dt
 	    delta_th = vth * dt
 
-	    x += delta_x
-	    y += delta_y
-	    th += delta_th
+	    x = delta_x + pose.position.x
+	    y = delta_y + pose.position.y
+	    th = delta_th + th
 
 	    # since all odometry is 6DOF (6 Degrees Of Freedom) we'll need a quaternion created from yaw
 	    odom_quat = tf.transformations.quaternion_from_euler(0, 0, th)
@@ -143,7 +152,7 @@ def wheel_encoders():
 
 	    # publish the message
 	    odom_pub.publish(odom)
-	    print("something has been published")
+	    # print("something has been published")
 
 	    last_time = current_time
 
