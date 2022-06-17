@@ -1,0 +1,4 @@
+<launch>
+	<node name="wheel_encoders" pkg="my_package" type="wheel_encoders.py" output="screen"></node>
+	<node name="decision_system" pkg="my_package" type="decision_system.py" output="screen"></node>
+</launch>
