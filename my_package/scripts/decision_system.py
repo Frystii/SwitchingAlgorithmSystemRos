@@ -38,7 +38,30 @@
 import rospy
 from std_msgs.msg import String
 
+# 0 is for the wheel encoders algorithm
+# 1 is for the SLAM algorithm
+# by default, we will use the wheel encoders algorithm, as it costs less more than the SLAM algorithm regarding the resources of the robot
+
+
 def decision_system():
+
+    default_value = 1
+
+    # maximum time in second
+    maximum_time_without_using_first_algo = 2
+    maximum_time_without_using_second_algo = 2
+
+
+    time_since_last_use_first_algo = 0
+    time_since_last_use_second_algo = 0
+
+    initial_battery_value = 100
+    minimum_battery_to_use_second_algo = 30
+    decrease_value_for_battery_every_loop = 2
+
+    initial_resources_value = 0
+    maximum_resources_to_use_second_algo = 50 
+    increase_value_for_resources_every_loop = 2
 
     # Create the node
     rospy.init_node('decision_system', anonymous=True)
@@ -46,40 +69,74 @@ def decision_system():
     # Initialize the publisher
     pub = rospy.Publisher('decision', String, queue_size=10)
 
-    # The value is publish every 1/0,2 = 5 second
-    rate = rospy.Rate(0.2) 
+    # The value is publish every 1/10 = 0.1 second
+    rate = rospy.Rate(10) 
 
-    # Initialization of the value
-    value = 0
+    # Initialization of the values
+    value = default_value
+    battery = initial_battery_value
+    resources = initial_resources_value
     
     while not rospy.is_shutdown():
 
+	print("------------")
+        print("RESOURCES : " + str(resources))
+	print("BATTERY LEVEL : " + str(battery))
+	print("TIME SINCE LAST USE FIRST ALGO : " + str(time_since_last_use_first_algo))
+	print("TIME SINCE LAST USE SECOND ALGO : " + str(time_since_last_use_second_algo))
+
         # Get the decision
         decision = getDecision(value)
-        print(decision)
+
+	if int(decision) == 1:
+	    
+	    time_since_last_use_first_algo += 0.1
+
+	else :
+
+	    time_since_last_use_second_algo += 0.1
+
 
         # Write the decision in the log
-        rospy.loginfo(decision)
+        # rospy.loginfo(decision)
 
         # Publish on the topic '/decision'
         pub.publish(str(decision))
 
-	# Wait 5 second
+	# Wait 0.1 second
         rate.sleep()
 
         # Update the value
-        value = updateValue(value)
+        if value == 1 and time_since_last_use_first_algo >= maximum_time_without_using_first_algo:
 
-# change the value
-def updateValue(value):
+	    if battery <= minimum_battery_to_use_second_algo:
+		value = 1
 
-    return (value + 1)%2
+	    else:
+		
+		value = 2
+	    	time_since_last_use_first_algo = 0
+	    
+
+	elif value == 2:
+
+	    if battery <= minimum_battery_to_use_second_algo or time_since_last_use_second_algo >= maximum_time_without_using_second_algo or resources >= maximum_resources_to_use_second_algo:
+	
+	        value = 1
+	        time_since_last_use_second_algo = 0
+
+	if battery > 0:
+		battery -= decrease_value_for_battery_every_loop
+
+	if resources < 100:
+		resources += increase_value_for_resources_every_loop
+
 
 # Determine decision depending on the value
 def getDecision(value):
 
     # We use the first algorithm (wheel encoders)
-    if value == 0:
+    if value == 1:
 
 	return 1
 
@@ -88,9 +145,5 @@ def getDecision(value):
 
 	return 2
 
-# Main
-if __name__ == '__main__':
-    try:
-        decision_system()
-    except rospy.ROSInterruptException:
-        pass
+
+decision_system()
